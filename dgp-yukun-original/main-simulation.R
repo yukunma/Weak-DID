@@ -8,14 +8,15 @@ library(MASS)
 alpha=0.8
 n=1000                         # number of obs
 NUM_ITERATIONS = 2000;         # number of iteration
-dgp=1;                         # dgp list
+dgp=4;                         # dgp list
 h=0.05;                        # bandwidth
 sieve_regularization = 0;
 K_con=5;                       #seive order K and k
 k <- 5;
 DELTA = 0.00000000001;         # precise of derivatiion
 dimX = 6;
-true = 1.7387; #DGP=1
+true_list = c(1.7387,1.47289,2.8483,3.2091); #alpha=0.8
+true<-true_list[dgp];
 ##################################
 ######## generate data ###########
 ##################################
@@ -46,18 +47,15 @@ alpha2 <- function(d,Y1,Y0,gamma1,gamma2,x,k,mm,j,h){
       integral = integral+p/(1-p)*mean((1-d)*(Y1-Y0-reg)*dnorm((ps-p)/b)/b)
     }
     else{
-      if (k == 0){
-        integral=integral
-      }
-      else{
         for (kappa in 1:k) {
           integral=integral+(1-p)^(kappa-1)*mean(dnorm((ps-p)/b)/b)/factorial(kappa)*mm[kappa,j]
         }
       }
     }
-  }
+  
   return( integral * (plist[2]-plist[1]) )
 }
+
 
 ##################################################
 ###define P_K(0)##################################
@@ -300,38 +298,46 @@ for (i in (1+length(gamma_ps_hat)):(length(gamma_ps_hat)+length(gamma_reg_hat)))
   
   influ_corrected <-matrix(c(B1-matrix(colMeans(d*int.cov)%*%phi2_hat,n,1) ,B2/A2*(A2>=h) + ch_psi,B3),n,3);
   jacobian_corrected <- matrix(c(1/mean(B3),-1/mean(B3),-(mean(B1)-mean(B2/A2*(A2>=h))-bias_estimator_1)/(mean(B3)^2)),1,3);
-  phi_hat <-  influ_corrected %*%t(jacobian_corrected);
-  SD_corrected_mean <-(var(phi_hat)/n)^0.5;
+  phi_corrected_hat <-  influ_corrected %*%t(jacobian_corrected);
+  SD_corrected_mean <-(var(phi_corrected_hat)/n)^0.5;
   sample_mean_corrected <- (mean(B1)-mean(B2/A2*(A2>=h))-bias_estimator_1)/mean(B3);
   cover_corrected_mean <- abs(sample_mean_corrected- true) < qnorm(0.975)*SD_corrected_mean;
   #self_normalized <- (sample_mean_corrected - true) / SD_corrected_mean;
   
-  #############################################
-  ################trimmed without BC###########
-  #############################################
-  alpha2_diff_trimmed<- matrix(0,14,1);
-  for (i in 1:7) {
-    alpha2_diff_trimmed[i] = (alpha2(d,y1,y0,gamma_ps_hat_diff[i,],gamma_reg_hat,int.cov,0,mm,i,h)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,0,mm,i,h))/DELTA
-  }
-  
-  for (i in 8:14) {
-    alpha2_diff_trimmed[i] = (alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat_diff[i-7,],int.cov,0,mm,i,h)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,0,mm,i,h))/DELTA
-  }
-  
- 
-  influ_trimmed <-matrix(c(B1-matrix(colMeans(d*int.cov)%*%phi2_hat,n,1) ,B2/A2*(A2>=h) + t(phi_hat)%*%alpha2_diff_trimmed,B3),n,3);
-  jacobian_trimmed <- matrix(c(1/mean(B3),-1/mean(B3),-(mean(B1)-mean(B2/A2*(A2>=h)))/(mean(B3)^2)),1,3);
-  phi_trimmed <-  influ_trimmed %*%t(jacobian_trimmed);
-  SD_trimmed <-(var(phi_trimmed)/n)^0.5;
-  sample_mean_trimmed <- (mean(B1)-mean(B2/A2*(A2>=h)))/mean(B3);
-  cover_trimmed <- abs(sample_mean_trimmed- true) < qnorm(0.975)*SD_trimmed;
-  
-  
+  # #############################################
+  # ################trimmed without BC###########
+  # #############################################
+  # # alpha2_diff_trimmed<- matrix(0,14,1);
+  # # for (i in 1:7) {
+  # #   alpha2_diff_trimmed[i] = (alpha2(d,y1,y0,gamma_ps_hat_diff[i,],gamma_reg_hat,int.cov,0,mm,i,h)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,0,mm,i,h))/DELTA
+  # # }
+  # # 
+  # # for (i in 8:14) {
+  # #   alpha2_diff_trimmed[i] = (alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat_diff[i-7,],int.cov,0,mm,i,h)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,0,mm,i,h))/DELTA
+  # # }
+  # 
+  # alpha2_diff_trimmed<- matrix(0,14,1);
+  # for (i in 1:7) {
+  #   alpha2_diff_trimmed[i] = (alpha_trimmed_without_BC(d,y1,y0,gamma_ps_hat_diff[i,],gamma_reg_hat,int.cov,h)-alpha_trimmed_without_BC(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,h)/DELTA
+  # }
+  # 
+  # for (i in 8:14) {
+  #   alpha2_diff_trimmed[i] = (alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat_diff[i-7,],int.cov,0,mm,i,h)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,0,mm,i,h))/DELTA
+  # }
+  # 
+  # influ_trimmed <-matrix(c(B1-matrix(colMeans(d*int.cov)%*%phi2_hat,n,1) ,B2/A2*(A2>=h) + t(phi_hat)%*%alpha2_diff_trimmed,B3),n,3);
+  # jacobian_trimmed <- matrix(c(1/mean(B3),-1/mean(B3),-(mean(B1)-mean(B2/A2*(A2>=h)))/(mean(B3)^2)),1,3);
+  # phi_trimmed <-  influ_trimmed %*%t(jacobian_trimmed);
+  # SD_trimmed <-(var(phi_trimmed)/n)^0.5;
+  # sample_mean_trimmed <- (mean(B1)-mean(B2/A2*(A2>=h)))/mean(B3);
+  # cover_trimmed <- abs(sample_mean_trimmed- true) < qnorm(0.975)*SD_trimmed;
+  # 
+  # 
   
   ###############################
   ######display result###########
   ###############################
-  results = c(true,sample_mean, cover_sample_mean, 2*qnorm(0.975)*SD_sample_mean, sample_mean_corrected, cover_corrected_mean,2*qnorm(0.975)*SD_corrected_mean,sample_mean_trimmed,cover_trimmed,2*qnorm(0.975)*SD_trimmed);
+  results = c(true,sample_mean, cover_sample_mean, 2*qnorm(0.975)*SD_sample_mean, sample_mean_corrected, cover_corrected_mean,2*qnorm(0.975)*SD_corrected_mean);
   RESULTS = rbind(RESULTS, results);
   print(c(iter,colMeans(RESULTS)));
   
@@ -347,7 +353,7 @@ c(mean(RESULTS[,1]),mean(RESULTS[,2]),mean(RESULTS[,2])-mean(RESULTS[,1]),var(RE
 c(mean(RESULTS[,1]),mean(RESULTS[,5]),mean(RESULTS[,5])-mean(RESULTS[,1]),var(RESULTS[,5])^0.5,(mean(RESULTS[,5]-RESULTS[,1])^2+var(RESULTS[,5]))^0.5,mean(RESULTS[,6]),mean(RESULTS[,7]));
 
   #TRUE, MEAN, BIAS,sd,RMSE, COVER,95%length -- FOR TRIMMED MEAN WITHOUT BIAS CORRECTION
-c(mean(RESULTS[,1]),mean(RESULTS[,8]),mean(RESULTS[,8])-mean(RESULTS[,1]),var(RESULTS[,8])^0.5,(mean(RESULTS[,8]-RESULTS[,1])^2+var(RESULTS[,8]))^0.5,mean(RESULTS[,9]),mean(RESULTS[,10]));
+# c(mean(RESULTS[,1]),mean(RESULTS[,8]),mean(RESULTS[,8])-mean(RESULTS[,1]),var(RESULTS[,8])^0.5,(mean(RESULTS[,8]-RESULTS[,1])^2+var(RESULTS[,8]))^0.5,mean(RESULTS[,9]),mean(RESULTS[,10]));
 
 
 

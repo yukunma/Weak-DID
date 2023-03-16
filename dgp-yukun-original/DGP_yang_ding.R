@@ -73,10 +73,9 @@ return(list(y1 = Y1, y0 = Y0,y11=Y11,y10=Y10, d = d, pp=pp,  att= att_unf, X = c
     Y11 <- a*(x1+x2+x3)^2+stats::rnorm(n, mean = 0, sd = 1);
     Y10 <- stats::rnorm(n, mean = 0, sd = 1);
     Y1 <-d*Y11+(1-d)*Y10;
-    Y0 <- a*(x1+x2+x3)^2+stats::rnorm(n, mean = 0, sd = 1)
-    #Y0 <- a*(x1+x2+x3)^2+stats::rnorm(n, mean = 0, sd = 1)
-    
-    #Y0 <- stats::rnorm(n, mean = 0, sd = 1)
+   # Y0 <- a*(x1+x2+x3)^2+stats::rnorm(n, mean = 0, sd = 1)
+
+    Y0 <- stats::rnorm(n, mean = 0, sd = 1)
     att_unf <-(mean(d*Y11)-mean(d*Y10))/mean(d);
     return(list(y1 = Y1, y0 = Y0,y11=Y11,y10=Y10, d = d, pp=pp, X = cbind(x1,x2,x3,x4,x5,x6)))
     
@@ -101,8 +100,10 @@ return(list(y1 = Y1, y0 = Y0,y11=Y11,y10=Y10, d = d, pp=pp,  att= att_unf, X = c
     #Y11 <- a*(x1+x2-x3)^2+stats::rnorm(n, mean = 0, sd = 1);
     Y10 <- stats::rnorm(n, mean = 0, sd = 1);
     Y1 <- d*Y11+(1-d)*Y10;
+    #Y0 <- stats::rnorm(n, mean = 0, sd = 1)
     
     Y0 <- a*(x1+x2+x3)^2+stats::rnorm(n, mean = 0, sd = 1)
+    
     att_unf <-(mean(d*Y11) - mean(d*Y10))/mean(d);
     return(list(y1 = Y1, y0 = Y0,y11=Y11,y10=Y10, d = d, pp=pp, X = cbind(x1,x2,x3,x4,x5,x6)))
   }
