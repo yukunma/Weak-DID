@@ -3,49 +3,43 @@ library(doParallel)
 
 start_time <- proc.time() # record start time
 
-#############
-# Constants #
-#############
+#####################
+##### Constants #####
+#####################
 OUTPUT_DIR = "results_yukun/"
-DGP_PATH = "~/Desktop/Weak-DID/dgp-yang2018-sasaki/dgp-yang-ding.r"   # enter your own path here     
 dimX = 6              # Dimension of X
 dimZ = 6              # Dimension of Z
 DELTA = 0.00000000001 # Precision of numerical derivative
-
-
+sieve_regularization = 0;
+source("~/Desktop/Weak-DID/dgp-yukun-parallel/DGP_yang_ding.R") # import dgps  
 
 ##################################
 ######## Set parameters ##########
 ##################################
+n = 500           # sample_size
+NUM_ITERATIONS = 10       # number of iterations for MC
+
 alpha = 0.8
-n = 500
-NUM_ITERATIONS = 10;
 dgp = 1;
+true = 1.732; #DGP=1
 h = 0.05;
-sieve_regularization = 0;
 K_con = 5;
 k <- 5;
-DELTA = 0.00000000001;
-dimX = 6;
-true = 1.732; #DGP=1
-##################################
-######## generate data ###########
-##################################
 
 
-
-source("~/Desktop/Weak-DID/dgp-yukun-parallel/DGP_yang_ding.R")
-
-
-
+selected_alphas = c(0.8)
+dgp_list = c(1, 2, 3, 4)
+true_list = c(1,1,1,1)
+selected_dgps = c(1, 2, 3, 4)
+selected_hs = seq(from = 0, to = 0.1, by = 0.01)
+selected_ks = c(5);
 
 ##################################################
-###define functions###############################
+### Define Functions #############################
 ##################################################
 
-
-alpha2 <- function(d,Y1,Y0,gamma1,gamma2,x,k,mm,j){
-  b <- 0.01
+alpha2 <- function(d,Y1,Y0,gamma1,gamma2,x,k,mm,j,h){
+  b = 0.01
   gamma_ps = matrix(gamma1,,1)
   gamma_reg = matrix(gamma2,,1)
   reg = x%*%gamma_reg
@@ -54,7 +48,7 @@ alpha2 <- function(d,Y1,Y0,gamma1,gamma2,x,k,mm,j){
   integral =0
   plist = 0:100/100
   for (p in plist) {
-    if (p<1-h){
+    if (p<=1-h){
       integral = integral+p/(1-p)*mean((1-d)*(Y1-Y0-reg)*dnorm((ps-p)/b)/b)
     }
     else{
@@ -93,27 +87,17 @@ clusterEvalQ(cl, {
   library(MASS)
 })
 
-RESULTS <- NULL;
 
 RESULTS <- foreach(iter = 1 : NUM_ITERATIONS, .combine = rbind) %dopar% {
 
-  
-  
-  ##*****remember to add  dpg=1:4
-  #data.did<-dgps(dgp,n)
   data.did<-dgps(n,dgp,alpha)
   y0 <- data.did$y0
   y1 <- data.did$y1
   d <-  data.did$d
   x <-  data.did$X
-  #true <- -0.000137;#dgp=2
-  true <- 1.74;#dgp=1
-  #true<--0.1;
-  #true <- data.did$att.unf
   deltaY <- y1 - y0;
   int.cov <-cbind(1,x)
-  
-  
+
   #Compute the Pscore using the pscore.cal
   i.weights <- as.vector(rep(1, n))
   reg_result = lm( I(deltaY) ~ int.cov[,2:7], subset=(d==0) )
@@ -268,7 +252,7 @@ RESULTS <- foreach(iter = 1 : NUM_ITERATIONS, .combine = rbind) %dopar% {
     PP = cbind(P0,P1,P2,P3,P4,P5)[,1:(K_con+1)];
     #beta1 = solve(t(P)%*%P + diag(array(sieve_regularization+1,K+1))) %*% t(P)%*%B1;
     beta22[,i] = solve(t(PP)%*%PP + diag(array(sieve_regularization,K_con+1))) %*% t(PP)%*%B2;
-    
+
   }
   
   
@@ -278,7 +262,7 @@ RESULTS <- foreach(iter = 1 : NUM_ITERATIONS, .combine = rbind) %dopar% {
     
     #beta1 = solve(t(P)%*%P + diag(array(sieve_regularization+1,K+1))) %*% t(P)%*%B1;
     # beta22[,i] = solve(t(P)%*%P + diag(array(sieve_regularization+1,K_con+1))) %*% t(P)%*%BB;
-    beta22[,i] = solve(t(PP)%*%PP) %*% t(PP)%*%BB;
+    beta22[,i] = solve(t(P)%*%P) %*% t(P)%*%BB;
   }
   
   for (i in 1:14){
@@ -346,11 +330,11 @@ RESULTS <- foreach(iter = 1 : NUM_ITERATIONS, .combine = rbind) %dopar% {
   
   alpha2_diff<-matrix(0,14,1);
   for (i in 1:7) {
-    alpha2_diff[i] = (alpha2(d,y1,y0,gamma_ps_hat_diff[i,],gamma_reg_hat,int.cov,k,mm,i)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,k,mm,i))/DELTA
+    alpha2_diff[i] = (alpha2(d,y1,y0,gamma_ps_hat_diff[i,],gamma_reg_hat,int.cov,k,mm,i,h)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,k,mm,i,h))/DELTA
   }
   
   for (i in 8:14) {
-    alpha2_diff[i] = (alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat_diff[i-7,],int.cov,k,mm,i)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,k,mm,i))/DELTA
+    alpha2_diff[i] = (alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat_diff[i-7,],int.cov,k,mm,i,h)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,k,mm,i,h))/DELTA
   }
   #################################
   ###influence function omega2#####
