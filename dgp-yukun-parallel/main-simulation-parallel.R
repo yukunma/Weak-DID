@@ -13,10 +13,7 @@ dimZ = 6              # Dimension of Z
 DELTA = 0.00000000001 # Precision of numerical derivative
 
 
-library(trust)
-library(Matrix)
-library(Rlab)
-library(MASS)
+
 ##################################
 ######## Set parameters ##########
 ##################################
@@ -35,9 +32,9 @@ true = 1.732; #DGP=1
 ######## generate data ###########
 ##################################
 
-RESULTS <- NULL;
-AllRESULTS <- NULL;
-source("~/Desktop/Weak-DID/dgp-yukun-original/DGP_yang_ding.R")
+
+
+source("~/Desktop/Weak-DID/dgp-yukun-parallel/DGP_yang_ding.R")
 
 
 
@@ -81,9 +78,25 @@ dpda3 = matrix(c(0,       0,                 0,               7^0.5*(2*3*20),   
 dpda4 = matrix(c(0,       0,                 0,                            0,                       9^0.5*(2*3*4*70),                  11^0.5*(2*3*4*5*252*a^1-2*3*4*630)), 6,1);
 dpda5 = matrix(c(0,       0,                 0,                            0,                                      0,                                11^0.5*(2*3*4*5*252)), 6,1);
 
+#############################################
+# BEGIN MONTE CARLO WITH PARALLEL COMPUTING #
+#############################################
+number_of_cores = detectCores() # or replace with any positive number <= detectCores().   
+# Set up parallel processing environment
+cl <- makeCluster(number_of_cores)
+registerDoParallel(cl)
 
+clusterEvalQ(cl, {
+  library(trust)
+  library(Matrix)
+  library(Rlab)
+  library(MASS)
+})
 
-for(iter in 1 : NUM_ITERATIONS){
+RESULTS <- NULL;
+
+RESULTS <- foreach(iter = 1 : NUM_ITERATIONS, .combine = rbind) %dopar% {
+
   
   
   ##*****remember to add  dpg=1:4
@@ -99,7 +112,7 @@ for(iter in 1 : NUM_ITERATIONS){
   #true <- data.did$att.unf
   deltaY <- y1 - y0;
   int.cov <-cbind(1,x)
-
+  
   
   #Compute the Pscore using the pscore.cal
   i.weights <- as.vector(rep(1, n))
@@ -111,7 +124,7 @@ for(iter in 1 : NUM_ITERATIONS){
   reg_hat = int.cov%*%gamma_reg_hat
   ps.fit  = exp(int.cov%*%gamma_ps_hat)/(1+exp(int.cov%*%gamma_ps_hat))
   
-
+  
   ########################
   ###define A and B#######
   ########################
@@ -127,7 +140,7 @@ for(iter in 1 : NUM_ITERATIONS){
   ##############################################################
   #########influence function for gamma.   #####################
   ##############################################################
-
+  
   phi1_den=0
   phi1_num=NULL
   phi2_den=0
@@ -168,19 +181,19 @@ for(iter in 1 : NUM_ITERATIONS){
   gamma_reg_hat_diff[6,]=c(gamma_reg_hat[1:5],gamma_reg_hat[6]+DELTA,gamma_reg_hat[7]);
   gamma_reg_hat_diff[7,]=c(gamma_reg_hat[1:6],gamma_reg_hat[7]+DELTA);
   
-alpha20_diff<- matrix(0,length(gamma_ps_hat)+length(gamma_reg_hat),1);
+  alpha20_diff<- matrix(0,length(gamma_ps_hat)+length(gamma_reg_hat),1);
   
-for (i in 1:length(gamma_ps_hat)){
-  pscore_aux<-int.cov%*%gamma_ps_hat_diff[i,];
-  pscore_aux[pscore_aux>16] <- 16;
-  alpha20_diff[i] <- (mean(B2/(1-plogis(pscore_aux)))-mean(B2/A2))/(gamma_ps_hat_diff[i,i]-gamma_ps_hat[i]);
-}
+  for (i in 1:length(gamma_ps_hat)){
+    pscore_aux<-int.cov%*%gamma_ps_hat_diff[i,];
+    pscore_aux[pscore_aux>16] <- 16;
+    alpha20_diff[i] <- (mean(B2/(1-plogis(pscore_aux)))-mean(B2/A2))/(gamma_ps_hat_diff[i,i]-gamma_ps_hat[i]);
+  }
   
-for (i in (1+length(gamma_ps_hat)):(length(gamma_ps_hat)+length(gamma_reg_hat))){
-  alpha20_diff[i] <- (mean(ps.fit*(1-d)*(deltaY-int.cov%*%gamma_reg_hat_diff[i-7,])/A2)-mean(B2/A2))/(gamma_reg_hat_diff[i-7,i-7]-gamma_reg_hat[i-7]);
-}
+  for (i in (1+length(gamma_ps_hat)):(length(gamma_ps_hat)+length(gamma_reg_hat))){
+    alpha20_diff[i] <- (mean(ps.fit*(1-d)*(deltaY-int.cov%*%gamma_reg_hat_diff[i-7,])/A2)-mean(B2/A2))/(gamma_reg_hat_diff[i-7,i-7]-gamma_reg_hat[i-7]);
+  }
   ####################finish calculate alpha2_diff for h=0 ################## 
-
+  
   ########################################################
   ##########calculate sample mean and sd##################
   ########################################################
@@ -195,13 +208,13 @@ for (i in (1+length(gamma_ps_hat)):(length(gamma_ps_hat)+length(gamma_reg_hat)))
   ###trimmed mean with bias correction#########
   ###define trimming threshold ################
   #############################################
- # h=0.01;
-
+  # h=0.01;
+  
   #######################################
   ##########seive estimation#############
   #######################################
   
- 
+  
   P0 = matrix(1,n,1);
   P1 = matrix(3^0.5*(2*A-1),n,1);
   P2 = matrix(5^0.5*(6*A^2-6*A+1),n,1);
@@ -232,7 +245,7 @@ for (i in (1+length(gamma_ps_hat)):(length(gamma_ps_hat)+length(gamma_reg_hat)))
     bias_estimator_1 = bias_estimator_1 + mean(A2^(kappa-1)*(A2<h)) / factorial(kappa) * m[kappa];
   }
   
- 
+  
   
   ##########################################################
   ######mm report different m value for different gamma####
@@ -241,7 +254,7 @@ for (i in (1+length(gamma_ps_hat)):(length(gamma_ps_hat)+length(gamma_reg_hat)))
   AA<-array(0,n);
   beta22<-matrix(0,K_con+1,length(gamma_ps_hat)+length(gamma_reg_hat));
   mm<-matrix(0,K_con+1,length(gamma_ps_hat)+length(gamma_reg_hat));
-
+  
   for (i in 1:length(gamma_ps_hat))
   {
     
@@ -258,7 +271,7 @@ for (i in (1+length(gamma_ps_hat)):(length(gamma_ps_hat)+length(gamma_reg_hat)))
     
   }
   
-
+  
   for (i in (length(gamma_ps_hat)+1):(length(gamma_ps_hat)+length(gamma_reg_hat))){
     BB <- ps.fit*(1-d)*(deltaY-int.cov%*%gamma_reg_hat_diff[i-7,]);
     
@@ -379,13 +392,9 @@ for (i in (1+length(gamma_ps_hat)):(length(gamma_ps_hat)+length(gamma_reg_hat)))
   ###############################
   ######display result###########
   ###############################
-  results = c(true,sample_mean, cover_sample_mean, 2*qnorm(0.975)*SD_sample_mean, sample_mean_corrected, cover_corrected_mean,2*qnorm(0.975)*SD_corrected_mean);
-  RESULTS = rbind(RESULTS, results);
-  print(c(iter,colMeans(RESULTS)));
-  
+  result = c(true,sample_mean, cover_sample_mean, 2*qnorm(0.975)*SD_sample_mean, sample_mean_corrected, cover_corrected_mean,2*qnorm(0.975)*SD_corrected_mean);
+  return(result)
 }
-
-
 
  # TRUE, MEAN, BIAS, sd,RMSE, COVER,95%length -- FOR SAMPLE MEAN
 c(mean(RESULTS[,1]),mean(RESULTS[,2]),mean(RESULTS[,2])-mean(RESULTS[,1]),var(RESULTS[,2])^0.5,(mean(RESULTS[,2]-RESULTS[,1])^2+var(RESULTS[,2]))^0.5, mean(RESULTS[,3]),mean(RESULTS[,4]));
