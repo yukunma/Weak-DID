@@ -1,3 +1,18 @@
+library(foreach)
+library(doParallel)
+
+start_time <- proc.time() # record start time
+
+#############
+# Constants #
+#############
+OUTPUT_DIR = "results_yukun/"
+DGP_PATH = "~/Desktop/Weak-DID/dgp-yang2018-sasaki/dgp-yang-ding.r"   # enter your own path here     
+dimX = 6              # Dimension of X
+dimZ = 6              # Dimension of Z
+DELTA = 0.00000000001 # Precision of numerical derivative
+
+
 library(trust)
 library(Matrix)
 library(Rlab)
@@ -5,16 +20,16 @@ library(MASS)
 ##################################
 ######## Set parameters ##########
 ##################################
-alpha=0.8
-n=500
-NUM_ITERATIONS = 2000;
-dgp=1;
-h=0.05;
+alpha = 0.8
+n = 500
+NUM_ITERATIONS = 10;
+dgp = 1;
+h = 0.05;
 sieve_regularization = 0;
-K_con=5;
+K_con = 5;
 k <- 5;
 DELTA = 0.00000000001;
-dimX=6;
+dimX = 6;
 true = 1.732; #DGP=1
 ##################################
 ######## generate data ###########
@@ -30,9 +45,10 @@ source("~/Desktop/Weak-DID/dgp-yukun-original/DGP_yang_ding.R")
 ##################################################
 ###define functions###############################
 ##################################################
-b=0.01;
+
 
 alpha2 <- function(d,Y1,Y0,gamma1,gamma2,x,k,mm,j){
+  b <- 0.01
   gamma_ps = matrix(gamma1,,1)
   gamma_reg = matrix(gamma2,,1)
   reg = x%*%gamma_reg
@@ -66,7 +82,8 @@ dpda4 = matrix(c(0,       0,                 0,                            0,   
 dpda5 = matrix(c(0,       0,                 0,                            0,                                      0,                                11^0.5*(2*3*4*5*252)), 6,1);
 
 
-for(iter in 1:NUM_ITERATIONS){
+
+for(iter in 1 : NUM_ITERATIONS){
   
   
   ##*****remember to add  dpg=1:4
