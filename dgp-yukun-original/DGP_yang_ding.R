@@ -20,7 +20,7 @@ a<-1;
 Y11 <- a*(x1+x2+x3-x4+x5+x6)+stats::rnorm(n, mean = 0, sd = 1);
 Y10 <- stats::rnorm(n, mean = 0, sd = 1);
 Y1 <-d*Y11+(1-d)*Y10;
-Y0 <- a*(x1+x2+x3-x4+x5+x6)++stats::rnorm(n, mean = 0, sd = 1);
+Y0 <- a*(x1+x2+x3-x4+x5+x6)+stats::rnorm(n, mean = 0, sd = 1);
 
 #Y0 <- stats::rnorm(n, mean = 0, sd = 1)
 att_unf <-(mean(d*Y11)-mean(d*Y10))/mean(d);

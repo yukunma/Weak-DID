@@ -6,14 +6,14 @@ library(MASS)
 ######## Set parameters ##########
 ##################################
 alpha=0.8
-n=500
-NUM_ITERATIONS = 2000;
-dgp=1;
-h=0.05;
+n=1000                         # number of obs
+NUM_ITERATIONS = 2000;         # number of iteration
+dgp=1;                         # dgp list
+h=0.05;                        # bandwidth
 sieve_regularization = 0;
-K_con=5;
+K_con=5;                       #seive order K and k
 k <- 5;
-DELTA = 0.00000000001;
+DELTA = 0.00000000001;         # precise of derivatiion
 dimX = 6;
 true = 1.732; #DGP=1
 ##################################
@@ -30,9 +30,10 @@ source("~/Desktop/Weak-DID/dgp-yukun-original/DGP_yang_ding.R")
 ##################################################
 ###define functions###############################
 ##################################################
-b=0.01;
 
-alpha2 <- function(d,Y1,Y0,gamma1,gamma2,x,k,mm,j){
+
+alpha2 <- function(d,Y1,Y0,gamma1,gamma2,x,k,mm,j,h){
+  b=0.01
   gamma_ps = matrix(gamma1,,1)
   gamma_reg = matrix(gamma2,,1)
   reg = x%*%gamma_reg
@@ -41,7 +42,7 @@ alpha2 <- function(d,Y1,Y0,gamma1,gamma2,x,k,mm,j){
   integral =0
   plist = 0:100/100
   for (p in plist) {
-    if (p<1-h){
+    if (p<=1-h){
       integral = integral+p/(1-p)*mean((1-d)*(Y1-Y0-reg)*dnorm((ps-p)/b)/b)
     }
     else{
@@ -53,46 +54,6 @@ alpha2 <- function(d,Y1,Y0,gamma1,gamma2,x,k,mm,j){
   }
   return( integral * (plist[2]-plist[1]) )
 }
-
-# bb3<-function(p){
-#   p1<-matrix(p,n,1);
-#   aux_gau <- array((plogis(int.cov%*%gamma_ps_hat_diff[i,])-p1)/b,n);
-#   aux_gau0 <- array((plogis(int.cov%*%gamma_ps_hat)-p1)/b,n);
-#   KK <- matrix(dnorm(aux_gau)/b,n,1)
-#   KK0 <- matrix(dnorm(aux_gau0)/b,n,1)
-#   f<- p/(1-p)*mean((1-d)*(deltaY-int.cov%*%gamma_reg_hat)*(KK-KK0));
-#   return(f)
-# }
-# 
-# 
-# 
-# bb4<- function(p){
-#   
-#   p1<-matrix(p,n,1);
-#   aux_gau <- array((plogis(int.cov%*%gamma_ps_hat)-p1)/b,n);
-#   KK<-matrix(dnorm(aux_gau)/b,n,1)
-#   f<- p/(1-p)*mean((1-d)*(deltaY-int.cov%*%gamma_reg_hat_diff[i-7,])*KK)-p/(1-p)*mean((1-d)*(deltaY-int.cov%*%gamma_reg_hat)*KK);
-#   
-# }
-# 
-# cc1<- function(p){
-#   p1<-matrix(p,n,1);
-#   aux_gau <- array((plogis(int.cov%*%gamma_ps_hat_diff[i,])-p1)/b,n);
-#   KK <- matrix(dnorm(aux_gau)/b,n,1);
-#   f<- (1-p)^(kappa-1)*mean(KK);
-#   return(f)
-# }
-# 
-# 
-# 
-# cc0<- function(p){
-#   
-#   p1<-matrix(p,n,1);
-#   aux_gau <- array((plogis(int.cov%*%gamma_ps_hat)-p1)/b,n);
-#   KK <- matrix(K(aux_gau)/b,n,1);
-#   f<- (1-p)^(kappa-1)*mean(KK)
-#   return(f)
-# }
 
 ##################################################
 ###define P_K(0)##################################
@@ -116,15 +77,13 @@ for(iter in 1:NUM_ITERATIONS){
   y1 <- data.did$y1
   d <-  data.did$d
   x <-  data.did$X
-  #true <- -0.000137;#dgp=2
-  true <- 1.74;#dgp=1
-  #true<--0.1;
-  #true <- data.did$att.unf
   deltaY <- y1 - y0;
   int.cov <-cbind(1,x)
 
+  ##########################################################################################
+  ###reg coefficients for selection model and outcome regression model######################
+  ##########################################################################################
   
-  #Compute the Pscore using the pscore.cal
   i.weights <- as.vector(rep(1, n))
   reg_result = lm( I(deltaY) ~ int.cov[,2:7], subset=(d==0) )
   ps_result  = glm( d ~ int.cov[,2:7], family=binomial(link='logit') )
@@ -150,14 +109,7 @@ for(iter in 1:NUM_ITERATIONS){
   ##############################################################
   #########influence function for gamma.   #####################
   ##############################################################
-  ###*******double check######
-  # phi1 <- matrix(0,dim(int.cov)[2],n);
-  # phi2 <- matrix(0,dim(int.cov)[2],n);
-  # for (i in 1:n){
-  # 
-  #    phi1[,i]<-solve(t(int.cov)%*%diag(ps.fit*(1-ps.fit),n,n)%*%int.cov/n)%*%int.cov[i,]*(d[i]-ps.fit[i]);
-  #    phi2[,i]<-solve(crossprod(int.cov*(1-d),int.cov)/n)%*%int.cov[i,]*(deltaY[i]-reg_hat[i])*(1-d[i]);
-  # }
+
   
   phi1_den=0
   phi1_num=NULL
@@ -210,6 +162,9 @@ for (i in 1:length(gamma_ps_hat)){
 for (i in (1+length(gamma_ps_hat)):(length(gamma_ps_hat)+length(gamma_reg_hat))){
   alpha20_diff[i] <- (mean(ps.fit*(1-d)*(deltaY-int.cov%*%gamma_reg_hat_diff[i-7,])/A2)-mean(B2/A2))/(gamma_reg_hat_diff[i-7,i-7]-gamma_reg_hat[i-7]);
 }
+
+
+  
   ####################finish calculate alpha2_diff for h=0 ################## 
 
   ########################################################
@@ -292,11 +247,7 @@ for (i in (1+length(gamma_ps_hat)):(length(gamma_ps_hat)+length(gamma_reg_hat)))
 
   for (i in (length(gamma_ps_hat)+1):(length(gamma_ps_hat)+length(gamma_reg_hat))){
     BB <- ps.fit*(1-d)*(deltaY-int.cov%*%gamma_reg_hat_diff[i-7,]);
-    
-    
-    #beta1 = solve(t(P)%*%P + diag(array(sieve_regularization+1,K+1))) %*% t(P)%*%B1;
-    # beta22[,i] = solve(t(P)%*%P + diag(array(sieve_regularization+1,K_con+1))) %*% t(P)%*%BB;
-    beta22[,i] = solve(t(PP)%*%PP) %*% t(PP)%*%BB;
+    beta22[,i] = solve(t(P)%*%P) %*% t(P)%*%BB;
   }
   
   for (i in 1:14){
@@ -308,67 +259,18 @@ for (i in (1+length(gamma_ps_hat)):(length(gamma_ps_hat)+length(gamma_reg_hat)))
   }
   
   ######################################################
-  ### calculate alpha1_diff#############################
-  ### bb1,2 function is the tau2 part######################
+  ### calculate alpha2_diff#############################
   #######################################################
-  # 
-  # alpha1_diff<-matrix(0,length(gamma_ps_hat)+length(gamma_reg_hat),1);
-  # for (i in 1: length(gamma_ps_hat)){
-  #   alpha1_diff[i]<- (integrate(bb3,lower=0,upper = 1-h)$value)/DELTA;
-  # }
-  # 
-  # for (i in (length(gamma_ps_hat)+1):(length(gamma_ps_hat)+length(gamma_reg_hat))){
-  #   alpha1_diff[i]<- (integrate(bb4,lower=0,upper = 1-h)$value)/DELTA;
-  #   
-  # }
-  # 
-  # ##########################################################
-  # ######cc function is (1-p)^kappa*tau1#####################
-  # ##########################################################
-  # 
-  # alpha2<-matrix(0,length(gamma_ps_hat)+length(gamma_reg_hat),1);
-  # for (i in 1: length(gamma_ps_hat)){
-  #   for (kappa in 1: k){
-  #     alpha2[i]<-alpha2[i]+integrate(cc1,1-h,1)$value/factorial(kappa)*mm[kappa,i];
-  #   }
-  # }
-  # 
-  # for (i in (length(gamma_ps_hat)+1):(length(gamma_ps_hat)+length(gamma_reg_hat))){
-  #   for (kappa in 1:k){
-  #     alpha2[i]<-alpha2[i]+integrate(cc0,1-h,1)$value/factorial(kappa)*mm[kappa,i];
-  #     
-  #   }
-  # }
-  # 
-  # 
-  # 
-  # 
-  # alpha20 <- 0;
-  # for (kappa in 1:k){
-  #   alpha20<-alpha20+integrate(cc0,1-h,1)$value/factorial(kappa)*m[kappa];
-  # }
-  # 
-  # ##################################################################
-  # ##########calculate alpha2_diff with h not equal to 0#############
-  # ##################################################################
-  # 
-  # 
-  # alpha2_diff<-matrix(0,length(gamma_ps_hat)+length(gamma_reg_hat),1);
-  # for (i in 1:length(gamma_ps_hat)){
-  #   alpha2_diff[i]<- (alpha2[i]-alpha20)/DELTA;
-  # }
-  # for (i in (length(gamma_ps_hat)+1):(length(gamma_ps_hat)+length(gamma_reg_hat))){
-  #   alpha2_diff[i]<- (alpha2[i]-alpha20)/DELTA;
-  # }
-  # 
+
+
   
   alpha2_diff<-matrix(0,14,1);
   for (i in 1:7) {
-    alpha2_diff[i] = (alpha2(d,y1,y0,gamma_ps_hat_diff[i,],gamma_reg_hat,int.cov,k,mm,i)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,k,mm,i))/DELTA
+    alpha2_diff[i] = (alpha2(d,y1,y0,gamma_ps_hat_diff[i,],gamma_reg_hat,int.cov,k,mm,i,h)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,k,mm,i,h))/DELTA
   }
   
   for (i in 8:14) {
-    alpha2_diff[i] = (alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat_diff[i-7,],int.cov,k,mm,i)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,k,mm,i))/DELTA
+    alpha2_diff[i] = (alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat_diff[i-7,],int.cov,k,mm,i,h)-alpha2(d,y1,y0,gamma_ps_hat,gamma_reg_hat,int.cov,k,mm,i,h))/DELTA
   }
   #################################
   ###influence function omega2#####
