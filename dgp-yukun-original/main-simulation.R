@@ -14,7 +14,7 @@ sieve_regularization = 0;
 K_con=5;
 k <- 5;
 DELTA = 0.00000000001;
-dimX=6;
+dimX = 6;
 true = 1.732; #DGP=1
 ##################################
 ######## generate data ###########
