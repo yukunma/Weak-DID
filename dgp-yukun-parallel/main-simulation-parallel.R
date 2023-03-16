@@ -17,7 +17,7 @@ source("~/Desktop/Weak-DID/dgp-yukun-parallel/DGP_yang_ding.R") # import dgps
 ##################################
 ######## Set parameters ##########
 ##################################
-n = 1000           # sample_size
+n = 500           # sample_size
 NUM_ITERATIONS = 2000       # number of iterations for MC
 
 selected_alphas = c(0.6, 0.7, 0.8)
@@ -25,8 +25,8 @@ dgp_list        = c(1, 2, 3, 4)
 selected_dgps   = c(1, 2, 3, 4)
 alpha_to_true_dict <- list(
   `0.6` = c(1.7339, 1.488699, 2.8847, 3.2305),
-  `0.7` = c(1.73659, 1.47954, 2.86605, 3.21555),
-  `0.8` = c(1.738719, 1.47289, 2.8483, 3.2091)
+  `0.7` = c(1.73659, 1.478084, 2.86605, 3.217624),
+  `0.8` = c(1.735989, 1.47289, 2.848659, 3.2091)
 )
 selected_ks = c(5, 4)
 selected_hs = seq(from = 0, to = 0.1, by = 0.01)
