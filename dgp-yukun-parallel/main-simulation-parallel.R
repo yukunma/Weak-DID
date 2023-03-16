@@ -22,7 +22,7 @@ true = 1.732; #DGP=1
 
 RESULTS <- NULL;
 AllRESULTS <- NULL;
-source("~/Desktop/Weak-DID/DGP_yang_ding.R")
+source("~/Desktop/Weak-DID/dgp-yukun-original/DGP_yang_ding.R")
 
 
 
@@ -53,46 +53,6 @@ alpha2 <- function(d,Y1,Y0,gamma1,gamma2,x,k,mm,j){
   }
   return( integral * (plist[2]-plist[1]) )
 }
-
-# bb3<-function(p){
-#   p1<-matrix(p,n,1);
-#   aux_gau <- array((plogis(int.cov%*%gamma_ps_hat_diff[i,])-p1)/b,n);
-#   aux_gau0 <- array((plogis(int.cov%*%gamma_ps_hat)-p1)/b,n);
-#   KK <- matrix(dnorm(aux_gau)/b,n,1)
-#   KK0 <- matrix(dnorm(aux_gau0)/b,n,1)
-#   f<- p/(1-p)*mean((1-d)*(deltaY-int.cov%*%gamma_reg_hat)*(KK-KK0));
-#   return(f)
-# }
-# 
-# 
-# 
-# bb4<- function(p){
-#   
-#   p1<-matrix(p,n,1);
-#   aux_gau <- array((plogis(int.cov%*%gamma_ps_hat)-p1)/b,n);
-#   KK<-matrix(dnorm(aux_gau)/b,n,1)
-#   f<- p/(1-p)*mean((1-d)*(deltaY-int.cov%*%gamma_reg_hat_diff[i-7,])*KK)-p/(1-p)*mean((1-d)*(deltaY-int.cov%*%gamma_reg_hat)*KK);
-#   
-# }
-# 
-# cc1<- function(p){
-#   p1<-matrix(p,n,1);
-#   aux_gau <- array((plogis(int.cov%*%gamma_ps_hat_diff[i,])-p1)/b,n);
-#   KK <- matrix(dnorm(aux_gau)/b,n,1);
-#   f<- (1-p)^(kappa-1)*mean(KK);
-#   return(f)
-# }
-# 
-# 
-# 
-# cc0<- function(p){
-#   
-#   p1<-matrix(p,n,1);
-#   aux_gau <- array((plogis(int.cov%*%gamma_ps_hat)-p1)/b,n);
-#   KK <- matrix(K(aux_gau)/b,n,1);
-#   f<- (1-p)^(kappa-1)*mean(KK)
-#   return(f)
-# }
 
 ##################################################
 ###define P_K(0)##################################
@@ -150,15 +110,7 @@ for(iter in 1:NUM_ITERATIONS){
   ##############################################################
   #########influence function for gamma.   #####################
   ##############################################################
-  ###*******double check######
-  # phi1 <- matrix(0,dim(int.cov)[2],n);
-  # phi2 <- matrix(0,dim(int.cov)[2],n);
-  # for (i in 1:n){
-  # 
-  #    phi1[,i]<-solve(t(int.cov)%*%diag(ps.fit*(1-ps.fit),n,n)%*%int.cov/n)%*%int.cov[i,]*(d[i]-ps.fit[i]);
-  #    phi2[,i]<-solve(crossprod(int.cov*(1-d),int.cov)/n)%*%int.cov[i,]*(deltaY[i]-reg_hat[i])*(1-d[i]);
-  # }
-  
+
   phi1_den=0
   phi1_num=NULL
   phi2_den=0
